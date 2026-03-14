@@ -66,19 +66,17 @@ def init_video_models(sam_version_tokenizer, sam_version, device="cuda"):
     torch_dtype = torch.float32
     kwargs = {"torch_dtype": torch_dtype}
 
+    # NOTE:
+    # low_cpu_mem_usage=True 会触发 transformers 的 meta 初始化路径。
+    # 当前 EVF-SAM2/SAM2 构图里有对 tensor.item() 的调用，
+    # 在 meta tensor 上会报错："Tensor.item() cannot be called on meta tensors"。
+    # 因此这里显式关闭该选项，走常规初始化流程。
     model = EvfSam2Model.from_pretrained(
-        sam_version, low_cpu_mem_usage=True, **kwargs
+        sam_version, low_cpu_mem_usage=False, **kwargs
     )
 
-    state_dict = model.state_dict()
-    model = model.to_empty(device=device)
-    for key, value in state_dict.items():
-        if value.device.type != 'meta':
-            model.state_dict()[key].copy_(value)
-        else:
-            print(f"Skipping meta parameter {key} for meta device {value.device}")
-
-    # model = model.to(device)
+    # 直接搬运到目标设备，避免 to_empty + 手动拷贝导致的额外显存峰值。
+    model = model.to(device)
     model.eval()
 
     return tokenizer, model

@@ -4,6 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import PreTrainedModel, AutoConfig, AutoModelForCausalLM
+from transformers.modeling_utils import local_torch_dtype, init, apply_patches
+try:
+    from transformers.modeling_utils import allow_all_hub_kernels
+except Exception:
+    allow_all_hub_kernels = None
 from .segment_anything_2.sam2.build_sam import build_sam2, build_sam2_video_predictor
 from .unilm.beit3.modeling_utils import BEiT3Wrapper, _get_base_config, _get_large_config
 from .configuration_evf import EvfConfig
@@ -59,6 +64,30 @@ def sigmoid_ce_loss(
 
 class EvfSam2Model(PreTrainedModel):
     config_class = EvfConfig
+
+    @classmethod
+    def get_init_context(
+        cls,
+        dtype: torch.dtype,
+        is_quantized: bool,
+        _is_ds_init_called: bool,
+        allow_all_kernels: bool | None,
+    ):
+        """
+        覆盖 transformers 默认的 meta-device 初始化流程。
+
+        原因：本模型 __init__ 期间会构建 SAM2 主干网络，内部存在
+        对 tensor.item() 的调用；若在 meta tensor 上执行会直接报错：
+        Tensor.item() cannot be called on meta tensors。
+
+        因此这里返回“非 meta”初始化上下文，保证从本地/Hub加载权重时
+        可以正常完成构图与参数装载。
+        """
+        init_contexts = [local_torch_dtype(dtype, cls.__name__), init.no_tie_weights(), apply_patches()]
+        if allow_all_kernels and allow_all_hub_kernels is not None:
+            init_contexts.append(allow_all_hub_kernels())
+        return init_contexts
+
     def __init__(
         self,
         config,
@@ -79,6 +108,9 @@ class EvfSam2Model(PreTrainedModel):
             (128, 128),
             (64, 64),
         ]
+        # transformers>=5 需要在子类 __init__ 末尾调用 post_init，
+        # 否则 all_tied_weights_keys 等运行时属性不会被注册。
+        self.post_init()
 
     def initialize_evf_modules(self, config):
         # SAM
@@ -158,6 +190,8 @@ class EvfSam2Model(PreTrainedModel):
 
             feat = output["encoder_out"][:, :1, ...]
             feat = self.text_hidden_fcs[0](feat)
+            # 与 SAM2 predictor 参数 dtype 对齐（如 fp16），避免 matmul dtype mismatch。
+            feat = feat.to(dtype=next(predictor.parameters()).dtype)
 
             ann_frame_idx = frame_idx  # the frame index we interact with
             ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)

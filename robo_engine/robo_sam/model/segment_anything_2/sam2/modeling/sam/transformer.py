@@ -239,6 +239,13 @@ class Attention(nn.Module):
 
     def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
         # Input projections
+        proj_dtype = self.q_proj.weight.dtype
+        if q.dtype != proj_dtype:
+            q = q.to(dtype=proj_dtype)
+        if k.dtype != proj_dtype:
+            k = k.to(dtype=proj_dtype)
+        if v.dtype != proj_dtype:
+            v = v.to(dtype=proj_dtype)
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)
@@ -290,6 +297,13 @@ class RoPEAttention(Attention):
         self, q: Tensor, k: Tensor, v: Tensor, num_k_exclude_rope: int = 0
     ) -> Tensor:
         # Input projections
+        proj_dtype = self.q_proj.weight.dtype
+        if q.dtype != proj_dtype:
+            q = q.to(dtype=proj_dtype)
+        if k.dtype != proj_dtype:
+            k = k.to(dtype=proj_dtype)
+        if v.dtype != proj_dtype:
+            v = v.to(dtype=proj_dtype)
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)

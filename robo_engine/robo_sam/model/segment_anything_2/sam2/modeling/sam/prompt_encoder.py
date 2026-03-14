@@ -74,7 +74,8 @@ class PromptEncoder(nn.Module):
           torch.Tensor: Positional encoding with shape
             1x(embed_dim)x(embedding_h)x(embedding_w)
         """
-        return self.pe_layer(self.image_embedding_size).unsqueeze(0)
+        pe = self.pe_layer(self.image_embedding_size).unsqueeze(0)
+        return pe.to(dtype=self.point_embeddings[0].weight.dtype, device=self._get_device())
 
     def _embed_points(
         self,
@@ -85,8 +86,8 @@ class PromptEncoder(nn.Module):
         """Embeds point prompts."""
         points = points + 0.5  # Shift to center of pixel
         if pad:
-            padding_point = torch.zeros((points.shape[0], 1, 2), device=points.device)
-            padding_label = -torch.ones((labels.shape[0], 1), device=labels.device)
+            padding_point = torch.zeros((points.shape[0], 1, 2), device=points.device, dtype=points.dtype)
+            padding_label = -torch.ones((labels.shape[0], 1), device=labels.device, dtype=labels.dtype)
             points = torch.cat([points, padding_point], dim=1)
             labels = torch.cat([labels, padding_label], dim=1)
         point_embedding = self.pe_layer.forward_with_coords(
@@ -98,7 +99,7 @@ class PromptEncoder(nn.Module):
         point_embedding[labels == 1] += self.point_embeddings[1].weight
         point_embedding[labels == 2] += self.point_embeddings[2].weight
         point_embedding[labels == 3] += self.point_embeddings[3].weight
-        return point_embedding
+        return point_embedding.to(dtype=self.point_embeddings[0].weight.dtype)
 
     def _embed_boxes(self, boxes: torch.Tensor) -> torch.Tensor:
         """Embeds box prompts."""
@@ -109,7 +110,7 @@ class PromptEncoder(nn.Module):
         )
         corner_embedding[:, 0, :] += self.point_embeddings[2].weight
         corner_embedding[:, 1, :] += self.point_embeddings[3].weight
-        return corner_embedding
+        return corner_embedding.to(dtype=self.point_embeddings[0].weight.dtype)
 
     def _embed_masks(self, masks: torch.Tensor) -> torch.Tensor:
         """Embeds mask inputs."""
@@ -166,7 +167,9 @@ class PromptEncoder(nn.Module):
         """
         bs = self._get_batch_size(points, boxes, masks, text_embeds)
         sparse_embeddings = torch.empty(
-            (bs, 0, self.embed_dim), device=self._get_device()
+            (bs, 0, self.embed_dim),
+            device=self._get_device(),
+            dtype=self.point_embeddings[0].weight.dtype,
         )
         if points is not None:
             coords, labels = points

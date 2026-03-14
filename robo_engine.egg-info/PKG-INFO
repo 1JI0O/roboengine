@@ -1,5 +1,5 @@
-Metadata-Version: 2.1
-Name: robo-engine
+Metadata-Version: 2.4
+Name: robo_engine
 Version: 0.0.1
 Summary: robo_engine: a plug-and-play visual robot data augmentation toolkit
 Home-page: https://github.com/michaelyuancb/robo_engine
@@ -10,6 +10,55 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9
 License-File: LICENSE
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: packaging
+Requires-Dist: sentencepiece
+Requires-Dist: einops
+Requires-Dist: numpy
+Requires-Dist: opencv_python
+Requires-Dist: Pillow
+Requires-Dist: pycocotools==2.0.6
+Requires-Dist: Requests
+Requires-Dist: tqdm
+Requires-Dist: uvicorn
+Requires-Dist: scipy
+Requires-Dist: bitsandbytes
+Requires-Dist: timm
+Requires-Dist: blobfile
+Requires-Dist: mypy
+Requires-Dist: pytest
+Requires-Dist: requests
+Requires-Dist: tensorboardX
+Requires-Dist: opencv-python
+Requires-Dist: torchmetrics
+Requires-Dist: deepspeed
+Requires-Dist: pycocoevalcap
+Requires-Dist: torchscale
+Requires-Dist: hydra-core
+Requires-Dist: accelerate
+Requires-Dist: transformers
+Requires-Dist: pyarrow
+Requires-Dist: ftfy
+Requires-Dist: tensorboard
+Requires-Dist: datasets
+Requires-Dist: diffusers
+Requires-Dist: huggingface_hub
+Requires-Dist: scikit-image
+Requires-Dist: python-box
+Requires-Dist: spacy
+Requires-Dist: imageio
+Requires-Dist: imageio[pyav]
+Requires-Dist: imageio[ffmpeg]
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
 
 
 <h1> RoboEngine: Plug-and-Play Robot Data Augmentation with Semantic Robot Segmentation and Background Generation </h1>

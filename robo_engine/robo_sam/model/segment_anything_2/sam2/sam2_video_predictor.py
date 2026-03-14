@@ -45,6 +45,7 @@ class SAM2VideoPredictor(SAM2Base):
         async_loading_frames=False,
     ):
         """Initialize a inference state."""
+        model_dtype = next(self.parameters()).dtype
         if type(video_path) == list:
             video_height, video_width = video_path[0].shape[:-1]
             video_path = [cv2.resize(frame, (self.image_size, self.image_size)) for frame in video_path]
@@ -60,7 +61,7 @@ class SAM2VideoPredictor(SAM2Base):
                 img_std = img_std.cuda()
             images -= img_mean
             images /= img_std
-            # import pdb 
+            # import pdb
             # pdb.set_trace()
         else:
             images, video_height, video_width = load_video_frames(
